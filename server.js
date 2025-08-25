@@ -1,30 +1,20 @@
-import express from "express";
-import multer from "multer";
-import cors from "cors";
-
-const app = express();
-const upload = multer();
-
-app.use(cors());
-
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
-const CHAT_ID = process.env.CHAT_ID;
-
 app.post("/api/register", upload.none(), async (req, res) => {
   try {
+    console.log("📥 Incoming body:", req.body); // 👈 ดูว่า frontend ส่งอะไรมาบ้าง
+
     const { fullName, lineName, capital, tradingStyle } = req.body;
 
     const message = `
 📝 WE WIN Registration
-👤 ชื่อ: ${fullName}
-💬 Line: ${lineName}
-💰 ทุน: ${capital}
-📈 สไตล์: ${tradingStyle}
+👤 ชื่อ: ${fullName || "ไม่ระบุ"}
+💬 Line: ${lineName || "ไม่ระบุ"}
+💰 ทุน: ${capital || "ไม่ระบุ"}
+📈 สไตล์: ${tradingStyle || "ไม่ระบุ"}
     `;
 
-    const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+    console.log("📤 Sending message:", message); // 👈 ดู payload ที่จะส่งไป Telegram
 
-    // ✅ ลอง log request/response เพื่อ debug
+    const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
     const tgResp = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,7 +25,7 @@ app.post("/api/register", upload.none(), async (req, res) => {
     });
 
     const tgData = await tgResp.json();
-    console.log("Telegram API response:", tgData); // 👈 log ไว้ดูใน Render
+    console.log("✅ Telegram API response:", tgData);
 
     if (!tgData.ok) {
       return res.status(500).json({ ok: false, error: tgData.description });
@@ -43,10 +33,7 @@ app.post("/api/register", upload.none(), async (req, res) => {
 
     res.json({ ok: true, message: "ส่งข้อมูลสำเร็จ!" });
   } catch (err) {
-    console.error("Server error:", err);
+    console.error("❌ Server error:", err);
     res.status(500).json({ ok: false, error: "ส่งไม่สำเร็จ" });
   }
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
