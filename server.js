@@ -1,8 +1,12 @@
 import express from "express";
 import multer from "multer";
+import cors from "cors";
 
 const app = express();
 const upload = multer();
+
+// ✅ เปิด CORS ให้ทุก origin (ถ้าต้องการจำกัดเฉพาะ domain แก้ตรงนี้ได้)
+app.use(cors());
 
 // 🔑 ใช้ Environment Variables
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
