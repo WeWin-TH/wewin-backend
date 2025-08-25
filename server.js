@@ -1,6 +1,19 @@
+import express from "express";
+import multer from "multer";
+import cors from "cors";
+
+const app = express();
+const upload = multer();
+
+app.use(cors());
+
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const CHAT_ID = process.env.CHAT_ID;
+
+// ✅ Endpoint register
 app.post("/api/register", upload.none(), async (req, res) => {
   try {
-    console.log("📥 Incoming body:", req.body); // 👈 ดูว่า frontend ส่งอะไรมาบ้าง
+    console.log("📥 Incoming body:", req.body);
 
     const { fullName, lineName, capital, tradingStyle } = req.body;
 
@@ -11,8 +24,6 @@ app.post("/api/register", upload.none(), async (req, res) => {
 💰 ทุน: ${capital || "ไม่ระบุ"}
 📈 สไตล์: ${tradingStyle || "ไม่ระบุ"}
     `;
-
-    console.log("📤 Sending message:", message); // 👈 ดู payload ที่จะส่งไป Telegram
 
     const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
     const tgResp = await fetch(url, {
@@ -37,3 +48,11 @@ app.post("/api/register", upload.none(), async (req, res) => {
     res.status(500).json({ ok: false, error: "ส่งไม่สำเร็จ" });
   }
 });
+
+// root route (optional)
+app.get("/", (req, res) => {
+  res.send("✅ WE WIN backend is running");
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
