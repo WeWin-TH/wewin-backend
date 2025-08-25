@@ -5,10 +5,8 @@ import cors from "cors";
 const app = express();
 const upload = multer();
 
-// ✅ เปิด CORS ให้ทุก origin (ถ้าต้องการจำกัดเฉพาะ domain แก้ตรงนี้ได้)
 app.use(cors());
 
-// 🔑 ใช้ Environment Variables
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
 
@@ -25,7 +23,9 @@ app.post("/api/register", upload.none(), async (req, res) => {
     `;
 
     const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-    await fetch(url, {
+
+    // ✅ ลอง log request/response เพื่อ debug
+    const tgResp = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -34,10 +34,17 @@ app.post("/api/register", upload.none(), async (req, res) => {
       }),
     });
 
+    const tgData = await tgResp.json();
+    console.log("Telegram API response:", tgData); // 👈 log ไว้ดูใน Render
+
+    if (!tgData.ok) {
+      return res.status(500).json({ ok: false, error: tgData.description });
+    }
+
     res.json({ ok: true, message: "ส่งข้อมูลสำเร็จ!" });
   } catch (err) {
-    console.error(err);
-    res.json({ ok: false, error: "ส่งไม่สำเร็จ" });
+    console.error("Server error:", err);
+    res.status(500).json({ ok: false, error: "ส่งไม่สำเร็จ" });
   }
 });
 
