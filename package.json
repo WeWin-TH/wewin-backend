@@ -2,9 +2,9 @@
   "name": "wewin-backend",
   "version": "1.0.0",
   "type": "module",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "axios": "^1.7.0",
