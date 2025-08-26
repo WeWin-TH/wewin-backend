@@ -35,7 +35,7 @@ app.post("/api/register", upload.single("photo"), async (req, res) => {
       formData.append("caption", message);
       formData.append("photo", fs.createReadStream(req.file.path));
 
-      const tgResp = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+      const tgResp = await fetch(`https://wewin-backend.onrender.com//api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
         method: "POST",
         body: formData,
       });
