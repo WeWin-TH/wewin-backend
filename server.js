@@ -7,10 +7,16 @@ import FormData from "form-data";
 const app = express();
 const upload = multer({ dest: "uploads/" });
 
+// เปิดให้ CORS ใช้งานได้จาก GitHub Pages
 app.use(cors());
 
+// อ่านค่า Environment Variables
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
+
+// Debug log ตอนสตาร์ท server
+console.log("🔑 TELEGRAM_TOKEN:", TELEGRAM_TOKEN ? TELEGRAM_TOKEN : "❌ Missing");
+console.log("💬 CHAT_ID:", CHAT_ID ? CHAT_ID : "❌ Missing");
 
 app.post("/api/register", upload.single("photo"), async (req, res) => {
   try {
@@ -28,38 +34,39 @@ app.post("/api/register", upload.single("photo"), async (req, res) => {
 📈 สไตล์: ${tradingStyle || "ไม่ระบุ"}
     `;
 
+    let tgUrl = "";
+    let tgResp, tgData;
+
     if (req.file) {
-      // ส่งรูป + ข้อความพร้อมกัน
       const formData = new FormData();
       formData.append("chat_id", CHAT_ID);
       formData.append("caption", message);
       formData.append("photo", fs.createReadStream(req.file.path));
 
-      const tgResp = await fetch(`https://wewin-backend.onrender.com//api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-        method: "POST",
-        body: formData,
-      });
+      tgUrl = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`;
+      console.log("🚀 Sending to Telegram (photo):", { url: tgUrl, chat_id: CHAT_ID });
 
-      const tgData = await tgResp.json();
-      console.log("✅ Telegram API response:", tgData);
+      tgResp = await fetch(tgUrl, { method: "POST", body: formData });
+      tgData = await tgResp.json();
 
-      fs.unlink(req.file.path, () => {}); // ลบไฟล์ชั่วคราว
-
-      if (!tgData.ok) {
-        return res.status(500).json({ ok: false, error: tgData.description });
-      }
+      fs.unlink(req.file.path, () => {}); // ลบไฟล์หลังส่ง
     } else {
-      // ถ้าไม่มีรูป → ส่งข้อความธรรมดา
-      const tgResp = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      tgUrl = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+      console.log("🚀 Sending to Telegram (message):", { url: tgUrl, chat_id: CHAT_ID });
+
+      tgResp = await fetch(tgUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: CHAT_ID, text: message }),
       });
 
-      const tgData = await tgResp.json();
-      if (!tgData.ok) {
-        return res.status(500).json({ ok: false, error: tgData.description });
-      }
+      tgData = await tgResp.json();
+    }
+
+    console.log("✅ Telegram API response:", tgData);
+
+    if (!tgData.ok) {
+      return res.status(500).json({ ok: false, error: tgData.description });
     }
 
     res.json({ ok: true, message: "ส่งข้อมูลสำเร็จ!" });
@@ -69,6 +76,7 @@ app.post("/api/register", upload.single("photo"), async (req, res) => {
   }
 });
 
+// root route
 app.get("/", (req, res) => {
   res.send("✅ WE WIN backend is running");
 });
