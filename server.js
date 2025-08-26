@@ -1,19 +1,20 @@
 import express from "express";
 import multer from "multer";
 import cors from "cors";
+import fs from "fs";
 
 const app = express();
-const upload = multer();
+const upload = multer({ dest: "uploads/" }); // เก็บไฟล์ชั่วคราว
 
 app.use(cors());
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
 
-// ✅ Endpoint register
-app.post("/api/register", upload.none(), async (req, res) => {
+app.post("/api/register", upload.single("photo"), async (req, res) => {
   try {
     console.log("📥 Incoming body:", req.body);
+    console.log("📷 File uploaded:", req.file);
 
     const { fullName, lineName, capital, tradingStyle } = req.body;
 
@@ -25,8 +26,9 @@ app.post("/api/register", upload.none(), async (req, res) => {
 📈 สไตล์: ${tradingStyle || "ไม่ระบุ"}
     `;
 
-    const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-    const tgResp = await fetch(url, {
+    // 1) ส่งข้อความไป Telegram
+    const urlMsg = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+    await fetch(urlMsg, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -35,11 +37,22 @@ app.post("/api/register", upload.none(), async (req, res) => {
       }),
     });
 
-    const tgData = await tgResp.json();
-    console.log("✅ Telegram API response:", tgData);
+    // 2) ถ้ามีไฟล์ → ส่งรูปไป Telegram
+    if (req.file) {
+      const urlPhoto = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`;
 
-    if (!tgData.ok) {
-      return res.status(500).json({ ok: false, error: tgData.description });
+      const formData = new FormData();
+      formData.append("chat_id", CHAT_ID);
+      formData.append("photo", fs.createReadStream(req.file.path));
+
+      await fetch(urlPhoto, { method: "POST", body: formData });
+    }
+
+    // 3) ลบไฟล์ชั่วคราวหลังส่งสำเร็จ
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("ลบไฟล์ไม่สำเร็จ:", err);
+      });
     }
 
     res.json({ ok: true, message: "ส่งข้อมูลสำเร็จ!" });
